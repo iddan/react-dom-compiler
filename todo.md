@@ -1,0 +1,5 @@
+ - Understand calling to functions and objects properly
+ - Split mutations to components and non-component mutations
+ - Detect control flow branching
+ - Mimic control flow branching in the output code
+ - Unify common tasks
