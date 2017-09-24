@@ -1,10 +1,12 @@
 const fs = require('fs')
+const path = require('path')
 const { Script } = require('vm')
 const { promisify } = require('util')
 const { JSDOM } = require('jsdom')
 const Babel = require('babel-core')
 
 const readFile = promisify(fs.readFile)
+const writeFile = promisify(fs.writeFile)
 
 const transformToStandardJS = (esNextCode) => {
   const { code } = Babel.transform(esNextCode, {
@@ -84,7 +86,7 @@ async function convert(filename) {
       args,
     })
   })
-  for (const interface of [dom.window.Node, dom.window.EventTarget]) {
+  for (const interface of [dom.window.Node, dom.window.Text, dom.window.HTMLElement, dom.window.EventTarget]) {
     spyObject(interface.prototype, ({ context, method, args }) => {
       mutations.push({
         target: context[TARGET_ID],
@@ -216,8 +218,9 @@ async function convert(filename) {
                     )
                   )
                 }
+                const functionIdentifier = t.identifier(path.node.id.name)
                 const functionDeclaration = t.functionDeclaration(
-                  t.identifier(path.node.id.name),
+                  functionIdentifier,
                   [
                     t.identifier('props')
                   ],
@@ -227,6 +230,12 @@ async function convert(filename) {
                 )
                 path.remove()
                 path.parent.body.push(functionDeclaration)
+                path.parent.body.push(
+                  t.callExpression(
+                    functionIdentifier,
+                    []
+                  )
+                )
               }
             }
           }
@@ -237,4 +246,8 @@ async function convert(filename) {
   return code;
 }
 
-convert(require.resolve('./example.js')).then(console.log).catch(console.error)
+convert(require.resolve('./example.js'))
+  .then(async result => {
+    await writeFile(path.join(path.dirname(require.resolve('./example.js')), 'example.bundle.js'), result)
+  })
+  .catch(console.error)
