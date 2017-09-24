@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "babel-core": "^6.26.0",
+    "babel-plugin-syntax-class-properties": "^6.13.0",
+    "babel-plugin-syntax-jsx": "^6.18.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
+    "babel-plugin-transform-react-jsx": "^6.24.1",
+    "jsdom": "^11.2.0",
+    "react": "^15.6.1",
+    "react-dom": "^15.6.1",
+    "webcomponentsjs": "^1.0.2"
+  }
+}
