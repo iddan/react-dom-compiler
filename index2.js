@@ -9,6 +9,17 @@ const A = ({ name }) => (
 ReactDOM.render(<A />, document.querySelector('#root'))
 `
 
+const isReactDOMRender = matches({
+  callee: {
+    object: {
+      name: 'ReactDOM',
+    },
+    property: {
+      name: 'render'
+    }
+  },
+})
+
 const JSXElement = {
   getName: (jsxElement) => jsxElement.openingElement.name.name,
   isDOMElement: (jsxElement) => Boolean(JSXElement.getName(jsxElement).match(/[a-z]/))
@@ -64,15 +75,32 @@ function plugin({ types: t }) {
 
   return {
     visitor: {
-      JSXElement: (path) => {
 
-        
+      CallExpression: (path) => {
+        if (isReactDOMRender(path.node)) {
+          const [jsxElement, rootNode] = path.node.arguments
+          path.replaceWith(
+            appendChild(
+              rootNode,
+              t.callExpression(
+                t.memberExpression(
+                  // yes i know this is stupid, im lazy
+                  t.identifier(JSXElement.getName(jsxElement)),
+                  t.identifier('render')
+                ),
+                []
+              )
+            )
+          )
+        }
+      },
+
+      JSXElement: (path) => {
 
         function handleJSXElement(jsxElement) {
           if (JSXElement.isDOMElement(jsxElement)) {
             const elementId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
-            
-            path.replaceWithMultiple([
+            return [
               declareConstant(elementId, createElement(JSXElement.getName(jsxElement))),
               ...jsxElement.children.reduce((acc, child) => {
                 switch (child.type) {
@@ -130,7 +158,7 @@ function plugin({ types: t }) {
                 }
               }, []),
               t.expressionStatement(elementId)
-            ])
+            ]
           }
         }
 
@@ -138,7 +166,21 @@ function plugin({ types: t }) {
         if (matches({ type: 'VariableDeclarator', init: { type: 'ArrowFunctionExpression' } }, parentBlock)) {
           const { body } = parentBlock.init
           if (matches({ type: 'JSXElement' }, body)) {
-            handleJSXElement(body)
+            path.replaceWith(
+              t.classDeclaration(
+                parentBlock.id,
+                null,
+                t.classBody([
+                  t.classMethod(
+                    'method',
+                    t.identifier('render'),
+                    [],
+                    t.blockStatement(handleJSXElement(body))
+                  )
+                ]),
+                []
+              )
+            )
           }
         }
       }
