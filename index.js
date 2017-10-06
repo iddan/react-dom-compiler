@@ -11,9 +11,36 @@ const writeFile = promisify(fs.writeFile)
 const transformToStandardJS = (esNextCode) => {
   const { code } = Babel.transform(esNextCode, {
     plugins: [
+      function (babel) {
+        const t = babel.types
+        return {
+          visitor: {
+            ClassDeclaration(path, state) {
+              for (const child of path.node.body.body) {
+                const childIndex = path.node.body.body.indexOf(child)
+                switch (child.type) {
+                  case 'ClassProperty': {
+                    switch(child.value.type) {
+                      case 'ArrowFunctionExpression': {
+                        child.value = t.functionExpression(
+                          child.key,
+                          child.value.params,
+                          child.value.body,
+                          child.value.generator,
+                          child.value.async
+                        )
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       'babel-plugin-transform-class-properties',
       'babel-plugin-transform-react-jsx',
-      'babel-plugin-transform-es2015-modules-commonjs'
+      'babel-plugin-transform-es2015-modules-commonjs',
     ]
   })
   return code
@@ -59,8 +86,9 @@ async function convert(filename) {
   rootNode[TARGET_ID] = 'rootNode'
   let targets = {
     'rootNode': {
-      tagName: 'div',
+      type: 'Element',
       attributes: {
+        tagName: 'div',
         id: 'root'
       }
     },
@@ -68,13 +96,29 @@ async function convert(filename) {
   spyObject(dom.window.Document.prototype, ({ method, args, value }) => {
     switch (method) {
       case 'createElement': {
-        const { tagName } = value
+        const [tagName] = args
         const id = Object.keys(targets).length
         value[TARGET_ID] = id
         targets[id] = {
-          tagName,
-          attributes: []
+          type: 'Element',
+          attributes: {
+            tagName,
+          },
         }
+        return
+      }
+      case 'createTextNode': {
+        console.log('createTextNode args', args)
+        const [textContent] = args
+        const id = Object.keys(targets).length
+        value[TARGET_ID] = id
+        targets[id] = {
+          type: 'Text',
+          attributes: {
+            textContent,
+          },
+        }
+        return
       }
       case 'createEvent': {
         return
@@ -86,7 +130,8 @@ async function convert(filename) {
       args,
     })
   })
-  for (const interface of [dom.window.Node, dom.window.Text, dom.window.HTMLElement, dom.window.EventTarget]) {
+  const { Node, Text, HTMLElement, EventTarget } = dom.window
+  for (const interface of [Node, Text, HTMLElement, EventTarget]) {
     spyObject(interface.prototype, ({ context, method, args }) => {
       mutations.push({
         target: context[TARGET_ID],
@@ -149,35 +194,68 @@ async function convert(filename) {
                 }
                 for (const [id, target] of Object.entries(targets)) {
                   const targetIdentifier = t.identifier('target_' + id)
-                  blockStatement.body.push(
-                    t.variableDeclaration('const', [
-                      t.variableDeclarator(
-                        targetIdentifier,
-                        t.callExpression(
-                          t.memberExpression(
-                            t.identifier('document'),
-                            t.identifier('createElement')
-                          ),
-                          [
-                            t.stringLiteral(target.tagName)
-                          ]
-                        )
+                  switch (target.type) {
+                    case 'Element': {
+                      const { tagName } = target.attributes
+                      blockStatement.body.push(
+                        t.variableDeclaration('const', [
+                          t.variableDeclarator(
+                            targetIdentifier,
+                            t.callExpression(
+                              t.memberExpression(
+                                t.identifier('document'),
+                                t.identifier('createElement')
+                              ),
+                              [
+                                t.stringLiteral(tagName)
+                              ]
+                            )
+                          )
+                        ])
                       )
-                    ])
-                  )
+                      break;
+                    }
+                    case 'Text': {
+                      const { textContent } = target.attributes
+                      blockStatement.body.push(
+                        t.variableDeclaration('const', [
+                          t.variableDeclarator(
+                            targetIdentifier,
+                            t.callExpression(
+                              t.memberExpression(
+                                t.identifier('document'),
+                                t.identifier('createTextNode')
+                              ),
+                              [
+                                t.stringLiteral(textContent)
+                              ]
+                            )
+                          )
+                        ])
+                      )
+                      break;
+                    }
+                  }
                   for (const [key, value] of Object.entries(target.attributes)) {
-                    blockStatement.body.push(
-                      t.callExpression(
-                        t.memberExpression(
-                          targetIdentifier,
-                          t.identifier('setAttribute')
-                        ),
-                        [
-                          t.stringLiteral(key),
-                          t.stringLiteral(String(value)),
-                        ]
-                      )
-                    )
+                    switch (key) {
+                      case 'tagName': {
+                        continue
+                      }
+                      default: {
+                        blockStatement.body.push(
+                          t.callExpression(
+                            t.memberExpression(
+                              targetIdentifier,
+                              t.identifier('setAttribute')
+                            ),
+                            [
+                              t.stringLiteral(key),
+                              t.stringLiteral(String(value)),
+                            ]
+                          )
+                        )
+                      }
+                    }
                   }
                 }
                 for (const mutation of mutations) {
@@ -207,7 +285,7 @@ async function convert(filename) {
                             return t.booleanLiteral(arg)
                           }
                           case 'function': {
-                            console.log(arg.name)
+                            console.log(arg)
                           }
                           default: {
                             console.log('couldn\'t parse ', mutation.method, arg)
