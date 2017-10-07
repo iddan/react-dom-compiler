@@ -23,7 +23,6 @@ const A = ({ name }) => (
 
 ReactDOM.render(<A name="Iddan" />, document.querySelector('#root'))
   `);
-  console.log(transformed);
   eval(transformed);
   expect(document.body.innerHTML).toBe('<div id="root"><div>hello Iddan</div></div>');
 });
@@ -36,7 +35,6 @@ const A = ({ name }) => (
 
 ReactDOM.render(<A name="Iddan" />, document.querySelector('#root'))
   `);
-  console.log(transformed);
   eval(transformed);
   expect(document.body.innerHTML).toBe('<div id="root"><div class="example">hello <span class="cool">Iddan</span></div></div>');
 });
@@ -53,7 +51,6 @@ const A = ({ name }) => (
 
 ReactDOM.render(<A name="Iddan" />, document.querySelector('#root'))
   `);
-  console.log(transformed);
   eval(transformed);
   expect(document.body.innerHTML).toBe('<div id="root"><div>hello <span>Iddan</span></div></div>');
 });
@@ -66,7 +63,6 @@ test('Arrow function with body', () => {
   
   ReactDOM.render(<A name="Iddan" />, document.querySelector('#root'))
     `);
-    console.log(transformed);
   eval(transformed);
   expect(document.body.innerHTML).toBe('<div id="root"><div>hello Iddan</div></div>');
 });
@@ -83,13 +79,14 @@ test('Class component', () => {
   
   ReactDOM.render(<A name="Iddan" />, document.querySelector('#root'))
     `);
-    console.log(transformed);
   eval(transformed);
   expect(document.body.innerHTML).toBe('<div id="root"><div>hello Iddan</div></div>');
 });
 
 // test('Statefull component', () => {
 //   const transformed = transform(`
+// const { Component } = require('react')
+
 // class A extends Component {
 //   state = {
 //     count: 0,
