@@ -98,14 +98,14 @@ module.exports = function plugin({types: t}) {
     [jsxAttributesToObjectExpression(JSXElement.getAttributes(jsxElement))],
   );
 
-  const selfCallingAnonymousFunction = (body) => t.callExpression(
+  const selfCallingAnonymousFunction = body => t.callExpression(
     t.functionExpression(
       null,
       [],
-      t.blockStatement(body)
+      t.blockStatement(body),
     ),
-    []
-  )
+    [],
+  );
 
   // const isClassComponent = node => node.superClass.name === 'Component';
 
@@ -151,7 +151,7 @@ module.exports = function plugin({types: t}) {
       ArrowFunctionExpression: path => {
 
         function handleJSXElement(jsxElement) {
-          const elementId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
+          const elementId = path.scope.generateUidIdentifierBasedOnNode(path.node.id);
           if (JSXElement.isDOMElement(jsxElement)) {
             return selfCallingAnonymousFunction([
               declareConstant(elementId, createElement(JSXElement.getName(jsxElement))),
@@ -234,7 +234,7 @@ module.exports = function plugin({types: t}) {
                 }
               }, []),
               t.returnStatement(elementId),
-            ])
+            ]);
           }
           return jsxElementToCallExpression(jsxElement);
         }
