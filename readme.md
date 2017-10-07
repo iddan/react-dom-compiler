@@ -19,7 +19,7 @@ ReactDOM.render(<App />, document.querySelector('#root'))
 
 | measurement / Syntax resolver | React + React DOM   | React DOM Compiler |
 | ---                           | ---                 | ---                |
-| Bundle size                   | 6kb + 108kb + 135b  | 1kb                |
+| Bundle size                   | 6kb + 108kb + 135b  | 590b               |
 
 
 ### Prior Art
