@@ -71,6 +71,23 @@ test('Arrow function with body', () => {
   expect(document.body.innerHTML).toBe('<div id="root"><div>hello Iddan</div></div>');
 });
 
+test('Class component', () => {
+  const transformed = transform(`
+  const { Component } = require('react')
+  class A extends Component {
+    render() {
+      const { name } = this.props
+      return <div>hello { name }</div>
+    }
+  }
+  
+  ReactDOM.render(<A name="Iddan" />, document.querySelector('#root'))
+    `);
+    console.log(transformed);
+  eval(transformed);
+  expect(document.body.innerHTML).toBe('<div id="root"><div>hello Iddan</div></div>');
+});
+
 // test('Statefull component', () => {
 //   const transformed = transform(`
 // class A extends Component {

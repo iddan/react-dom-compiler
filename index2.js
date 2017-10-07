@@ -96,17 +96,36 @@ module.exports = function plugin({types: t}) {
   const jsxElementToCallExpression = jsxElement => t.conditionalExpression(
     t.binaryExpression(
       'instanceof',
-      t.identifier(JSXElement.getName(jsxElement)),
+      t.memberExpression(
+        t.identifier(JSXElement.getName(jsxElement)),
+        t.identifier('prototype'),
+      ),
       t.memberExpression(
         t.callExpression(t.identifier('require'), [t.stringLiteral('react')]),
         t.identifier('Component'),
       )
     ),
-    t.newExpression(
-      t.identifier(JSXElement.getName(jsxElement)),
-      [
-        jsxAttributesToObjectExpression(JSXElement.getAttributes(jsxElement)) 
-      ],
+    methodCallExpression(
+      methodCallExpression(
+        t.identifier('Object'),
+        'assign',
+        [
+          t.newExpression(
+            t.identifier(JSXElement.getName(jsxElement)),
+            [
+              jsxAttributesToObjectExpression(JSXElement.getAttributes(jsxElement)) 
+            ],
+          ),
+          t.objectExpression([
+            t.objectProperty(
+              t.identifier('props'),
+              jsxAttributesToObjectExpression(JSXElement.getAttributes(jsxElement))
+            )
+          ])
+        ]
+      ),
+      'render',
+      []
     ),
     t.callExpression(
       t.identifier(JSXElement.getName(jsxElement)),
