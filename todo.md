@@ -1,5 +1,2 @@
- - Understand calling to functions and objects properly
- - Split mutations to components and non-component mutations (should execute fragments in clean environments)
- - Detect control flow branching
- - Mimic control flow branching in the output code
- - Unify common tasks
+ - handle statefull components
+ - handle style objects

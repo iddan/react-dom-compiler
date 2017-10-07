@@ -17,6 +17,7 @@ const isReactDOMRender = matches({
 
 const JSXElement = {
   getName: (jsxElement) => jsxElement.openingElement.name.name,
+  getAttributes: (jsxElement) => jsxElement.openingElement.attributes,
   isDOMElement: (jsxElement) => Boolean(JSXElement.getName(jsxElement).match(/[a-z]/))
 }
 
@@ -69,13 +70,18 @@ module.exports = function plugin({ types: t }) {
   )
 
   const jsxAttributesToObjectExpression = (attributes) => t.objectExpression(
-    attributes.map(({ name, value }) => t.objectProperty(t.identifier(name.name), value))
+    attributes.map(({ name, value }) => t.objectProperty(
+      t.identifier(name.name),
+      value.type === 'JSXExpressionContainer' ? value.expression : value,
+    ))
   )
 
   const jsxElementToCallExpression = (jsxElement) => t.callExpression(
     t.identifier(JSXElement.getName(jsxElement)),
-    [jsxAttributesToObjectExpression(jsxElement.openingElement.attributes)]
+    [jsxAttributesToObjectExpression(JSXElement.getAttributes(jsxElement))]
   )
+
+  // const jsxElementTypeToFunction = (jsxElement)
 
   return {
     visitor: {
@@ -110,6 +116,12 @@ module.exports = function plugin({ types: t }) {
               if (JSXElement.isDOMElement(jsxElement)) {
                 return [
                   declareConstant(elementId, createElement(JSXElement.getName(jsxElement))),
+                  ...JSXElement.getAttributes(jsxElement).map(attribute => (
+                    t.expressionStatement(methodCallExpression(elementId, 'setAttribute', [
+                      t.stringLiteral(attribute.name.name),
+                      attribute.value
+                    ]))
+                  )),
                   ...jsxElement.children.reduce((acc, child) => {
                     switch (child.type) {
                       case 'JSXElement': {
@@ -162,11 +174,14 @@ module.exports = function plugin({ types: t }) {
                                 t.breakStatement()
                               ])]),
                               t.switchCase(t.stringLiteral('object'), [t.blockStatement([
-                                t.ifStatement(expressionId, t.blockStatement([
-                                  t.throwStatement(t.newExpression(t.identifier('Error'), [
-                                    t.stringLiteral('Objects can not be passed as children')
-                                  ]))
-                                ])),
+                                t.ifStatement(
+                                  t.unaryExpression('!', t.binaryExpression('instanceof', expressionId, t.identifier('Node'))),
+                                  t.blockStatement([
+                                    t.throwStatement(t.newExpression(t.identifier('Error'), [
+                                      t.stringLiteral('Objects can not be passed as children')
+                                    ]))
+                                  ])
+                                ),
                                 t.breakStatement()
                               ])])
                             ]
@@ -181,6 +196,9 @@ module.exports = function plugin({ types: t }) {
                   }, []),
                 ]
               }
+              return [
+                declareConstant(elementId, jsxElementToCallExpression(jsxElement)),
+              ]
             }
     
             const { parentBlock } = path.scope
