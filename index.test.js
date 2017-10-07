@@ -1,5 +1,5 @@
 const Babel = require('babel-core');
-const plugin = require('./index2');
+const plugin = require('.');
 
 const transform = code => Babel.transform(code, {
   plugins: [
