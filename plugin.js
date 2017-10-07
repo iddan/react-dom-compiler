@@ -1,4 +1,16 @@
 const matches = require('lodash/fp/matches');
+const JSXElement = require('./jsx-element')
+const {
+  methodCallExpression,
+  documentMethod,
+  createElement,
+  createTextNode,
+  declareConstant,
+  appendChild,
+  jsxAttributesToObjectExpression,
+  jsxElementToCallExpression,
+  selfCallingAnonymousFunction,
+} = require('./babel-util')
 
 const isReactDOMRender = matches({
   callee: {
@@ -11,133 +23,7 @@ const isReactDOMRender = matches({
   },
 });
 
-const JSX_ATTRIBUTE_NAME_MAPPINGS = {
-  className: 'class',
-  htmlFor: 'for',
-};
-
-const JSXElement = {
-  getName: jsxElement => jsxElement.openingElement.name.name,
-  getAttributes: jsxElement => jsxElement.openingElement.attributes.map(attribute => {
-    const mappedName = JSX_ATTRIBUTE_NAME_MAPPINGS[attribute.name.name];
-    if (mappedName) {
-      return {
-        ...attribute,
-        name: {
-          ...attribute.name,
-          name: mappedName,
-        },
-      };
-    }
-    return attribute;
-  }),
-  isDOMElement: jsxElement => Boolean(JSXElement.getName(jsxElement).match(/[a-z]/)),
-};
-
 module.exports = function plugin({types: t}) {
-
-  const methodCallExpression = (object, method, args) => t.callExpression(
-    t.memberExpression(
-      object,
-      t.identifier(method),
-    ),
-    args,
-  );
-
-  const documentMethod = (method, args) => methodCallExpression(
-    t.identifier('document'),
-    method,
-    args,
-  );
-
-  const createElement = type => documentMethod(
-    'createElement',
-    [
-      t.stringLiteral(type),
-    ],
-  );
-
-  const createTextNode = text => documentMethod(
-    'createTextNode',
-    [
-      t.stringLiteral(text),
-    ],
-  );
-
-  const declareConstant = (id, init) => t.variableDeclaration(
-    'const',
-    [
-      t.variableDeclarator(
-        id,
-        init,
-      ),
-    ],
-  );
-
-  const appendChild = (parent, child) => methodCallExpression(
-    parent,
-    'appendChild',
-    [
-      child,
-    ],
-  );
-
-  const jsxAttributesToObjectExpression = attributes => t.objectExpression(
-    attributes.map(({name, value}) => t.objectProperty(
-      t.identifier(name.name),
-      value.type === 'JSXExpressionContainer' ? value.expression : value,
-    )),
-  );
-
-  const jsxElementToCallExpression = jsxElement => t.conditionalExpression(
-    t.binaryExpression(
-      'instanceof',
-      t.memberExpression(
-        t.identifier(JSXElement.getName(jsxElement)),
-        t.identifier('prototype'),
-      ),
-      t.memberExpression(
-        t.callExpression(t.identifier('require'), [t.stringLiteral('react')]),
-        t.identifier('Component'),
-      )
-    ),
-    methodCallExpression(
-      methodCallExpression(
-        t.identifier('Object'),
-        'assign',
-        [
-          t.newExpression(
-            t.identifier(JSXElement.getName(jsxElement)),
-            [
-              jsxAttributesToObjectExpression(JSXElement.getAttributes(jsxElement)) 
-            ],
-          ),
-          t.objectExpression([
-            t.objectProperty(
-              t.identifier('props'),
-              jsxAttributesToObjectExpression(JSXElement.getAttributes(jsxElement))
-            )
-          ])
-        ]
-      ),
-      'render',
-      []
-    ),
-    t.callExpression(
-      t.identifier(JSXElement.getName(jsxElement)),
-      [jsxAttributesToObjectExpression(JSXElement.getAttributes(jsxElement))],
-    ),
-  );
-
-  const selfCallingAnonymousFunction = body => t.callExpression(
-    t.functionExpression(
-      null,
-      [],
-      t.blockStatement(body),
-    ),
-    [],
-  );
-
   // const isClassComponent = node => node.superClass.name === 'Component';
 
   return {
