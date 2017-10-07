@@ -28,12 +28,12 @@ ReactDOM.render(<A name="Iddan" />, document.querySelector('#root'))
 test('Arrow function of static JSXElement, child JSXElement and JSXText', () => {
   const transformed = transform(`
 const A = ({ name }) => (
-  <div name="example">hello <span className="cool">{ name }</span></div>
+  <div className="example">hello <span className="cool">{ name }</span></div>
 )
 ReactDOM.render(<A name="Iddan" />, document.querySelector('#root'))
   `)
   eval(transformed)
-  expect(document.body.innerHTML).toBe('<div id="root"><div name="example">hello <span class="cool">Iddan</span></div></div>')
+  expect(document.body.innerHTML).toBe('<div id="root"><div class="example">hello <span class="cool">Iddan</span></div></div>')
 })
 
 test('Arrow function of static JSXElement and child component JSXElement of static JSXElement and JSXText', () => {
