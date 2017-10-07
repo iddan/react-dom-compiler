@@ -104,16 +104,22 @@ module.exports = function plugin({ types: t }) {
       ArrowFunctionExpression: (path) => {
         switch(path.node.body.type) {
           case 'JSXElement': {
-            function handleJSXElement(jsxElement) {
+            function handleJSXElement(jsxElement, elementId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)) {
               if (JSXElement.isDOMElement(jsxElement)) {
-                const elementId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
                 return [
                   declareConstant(elementId, createElement(JSXElement.getName(jsxElement))),
                   ...jsxElement.children.reduce((acc, child) => {
                     switch (child.type) {
                       case 'JSXElement': {
-                        // handleJSXElement(child)
-                        // break;
+                        const childId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
+                        return [
+                          ...acc,
+                          ...handleJSXElement(child, childId),
+                          t.expressionStatement(appendChild(
+                            elementId,
+                            childId
+                          ))
+                        ]
                       }
                       case 'JSXText': {
                         const textNodeId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
@@ -164,7 +170,6 @@ module.exports = function plugin({ types: t }) {
                       }
                     }
                   }, []),
-                  t.returnStatement(elementId)
                 ]
               }
             }
@@ -173,8 +178,13 @@ module.exports = function plugin({ types: t }) {
             if (matches({ type: 'VariableDeclarator', init: { type: 'ArrowFunctionExpression' } }, parentBlock)) {
               const { body } = parentBlock.init
               if (matches({ type: 'JSXElement' }, body)) {
-                const props = t.identifier('props')
-                path.node.body = t.blockStatement(handleJSXElement(body))
+                const statements = handleJSXElement(body)
+                const [declaration] = statements
+                const [declarator] = declaration.declarations
+                path.node.body = t.blockStatement([
+                  ...statements,
+                  t.returnStatement(declarator.id)
+                ])
               }
             }
           }
