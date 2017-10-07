@@ -84,8 +84,11 @@ function plugin({ types: t }) {
               rootNode,
               t.callExpression(
                 t.memberExpression(
-                  // yes i know this is stupid, im lazy
-                  t.identifier(JSXElement.getName(jsxElement)),
+                  t.newExpression(
+                    // yes i know this is stupid, im lazy
+                    t.identifier(JSXElement.getName(jsxElement)),
+                    [],
+                  ),
                   t.identifier('render')
                 ),
                 []
@@ -95,95 +98,98 @@ function plugin({ types: t }) {
         }
       },
 
-      JSXElement: (path) => {
-
-        function handleJSXElement(jsxElement) {
-          if (JSXElement.isDOMElement(jsxElement)) {
-            const elementId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
-            return [
-              declareConstant(elementId, createElement(JSXElement.getName(jsxElement))),
-              ...jsxElement.children.reduce((acc, child) => {
-                switch (child.type) {
-                  case 'JSXElement': {
-                    // handleJSXElement(child)
-                    // break;
-                  }
-                  case 'JSXText': {
-                    const textNodeId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
-                    return [
-                      ...acc,
-                      declareConstant(
-                        textNodeId,
-                        createTextNode(child.value)
-                      ),
-                      t.expressionStatement(appendChild(
-                        elementId,
-                        textNodeId
-                      )),
-                    ]
-                  }
-                  case 'JSXExpressionContainer': {
-                    switch (child.expression.type) {
-                      case 'Identifier': {
-                        const identifier = child.expression
-                        const identifierId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
+      ArrowFunctionExpression: (path) => {
+        switch(path.node.body.type) {
+          case 'JSXElement': {
+            function handleJSXElement(jsxElement) {
+              if (JSXElement.isDOMElement(jsxElement)) {
+                const elementId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
+                return [
+                  declareConstant(elementId, createElement(JSXElement.getName(jsxElement))),
+                  ...jsxElement.children.reduce((acc, child) => {
+                    switch (child.type) {
+                      case 'JSXElement': {
+                        // handleJSXElement(child)
+                        // break;
+                      }
+                      case 'JSXText': {
+                        const textNodeId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
                         return [
                           ...acc,
-                          t.ifStatement(
-                            identifier,
-                            t.blockStatement([
-                              declareConstant(
-                                identifierId,
-                                documentMethod(
-                                  'createTextNode',
-                                  [
-                                    identifier
-                                  ]
-                                )
-                              ),
-                              t.expressionStatement(appendChild(
-                                elementId,
-                                identifierId
-                              )),
-                            ])
-                          )
+                          declareConstant(
+                            textNodeId,
+                            createTextNode(child.value)
+                          ),
+                          t.expressionStatement(appendChild(
+                            elementId,
+                            textNodeId
+                          )),
                         ]
                       }
+                      case 'JSXExpressionContainer': {
+                        switch (child.expression.type) {
+                          case 'Identifier': {
+                            const identifier = child.expression
+                            const identifierId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
+                            return [
+                              ...acc,
+                              t.ifStatement(
+                                identifier,
+                                t.blockStatement([
+                                  declareConstant(
+                                    identifierId,
+                                    documentMethod(
+                                      'createTextNode',
+                                      [
+                                        identifier
+                                      ]
+                                    )
+                                  ),
+                                  t.expressionStatement(appendChild(
+                                    elementId,
+                                    identifierId
+                                  )),
+                                ])
+                              )
+                            ]
+                          }
+                        }
+                        // break;
+                      }
+                      default: {
+                        return acc
+                      }
                     }
-                    // break;
-                  }
-                  default: {
-                    return acc
-                  }
-                }
-              }, []),
-              t.expressionStatement(elementId)
-            ]
-          }
-        }
-
-        const { parentBlock } = path.scope
-        if (matches({ type: 'VariableDeclarator', init: { type: 'ArrowFunctionExpression' } }, parentBlock)) {
-          const { body } = parentBlock.init
-          if (matches({ type: 'JSXElement' }, body)) {
-            path.replaceWith(
-              t.classDeclaration(
-                parentBlock.id,
-                null,
-                t.classBody([
-                  t.classMethod(
-                    'method',
-                    t.identifier('render'),
-                    [],
-                    t.blockStatement(handleJSXElement(body))
+                  }, []),
+                  t.returnStatement(elementId)
+                ]
+              }
+            }
+    
+            const { parentBlock } = path.scope
+            if (matches({ type: 'VariableDeclarator', init: { type: 'ArrowFunctionExpression' } }, parentBlock)) {
+              const { body } = parentBlock.init
+              if (matches({ type: 'JSXElement' }, body)) {
+                path.parentPath.parentPath.replaceWith(
+                  t.classDeclaration(
+                    parentBlock.id,
+                    null,
+                    t.classBody([
+                      t.classMethod(
+                        'method',
+                        t.identifier('render'),
+                        [],
+                        t.blockStatement(handleJSXElement(body))
+                      )
+                    ]),
+                    []
                   )
-                ]),
-                []
-              )
-            )
+                )
+              }
+            }
           }
         }
-      }
+      },
     }
   }
 }
