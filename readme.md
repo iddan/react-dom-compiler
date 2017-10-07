@@ -1,8 +1,8 @@
 # React Compiler
 
-Use React syntax for building UIs without using React
+Compile react-dom code to vanilla JS commands
 
-Transforming this code:
+For this code:
 
 ```jsx
 import React from 'react'
@@ -17,9 +17,9 @@ const App = ({ name }) => (
 ReactDOM.render(<App />, document.querySelector('#root'))
 ```
 
-| measurement / Syntax resolver | React + React DOM   | React Compiler |
-| ---                           | ---                 | ---            |
-| Bundle size                   | 6kb + 108kb + 135b  | 1kb            |
+| measurement / Syntax resolver | React + React DOM   | React DOM Compiler |
+| ---                           | ---                 | ---                |
+| Bundle size                   | 6kb + 108kb + 135b  | 1kb                |
 
 
 ### Prior Art
