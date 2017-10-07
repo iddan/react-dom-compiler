@@ -1,7 +1,3 @@
-/**
- * Compile React component into vanilla DOM JS code
- */
-
 const matches = require('lodash/fp/matches');
 
 const isReactDOMRender = matches({
