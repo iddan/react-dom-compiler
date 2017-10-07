@@ -15,9 +15,26 @@ const isReactDOMRender = matches({
   },
 })
 
+const JSX_ATTRIBUTE_NAME_MAPPINGS = {
+  'className': 'class',
+  'htmlFor': 'for',
+}
+
 const JSXElement = {
   getName: (jsxElement) => jsxElement.openingElement.name.name,
-  getAttributes: (jsxElement) => jsxElement.openingElement.attributes,
+  getAttributes: (jsxElement) => jsxElement.openingElement.attributes.map(attribute => {
+    const mappedName = JSX_ATTRIBUTE_NAME_MAPPINGS[attribute.name.name]
+    if (mappedName) {
+      return {
+        ...attribute,
+        name: {
+          ...attribute.name,
+          name: mappedName
+        }
+      }
+    }
+    return attribute
+  }),
   isDOMElement: (jsxElement) => Boolean(JSXElement.getName(jsxElement).match(/[a-z]/))
 }
 
