@@ -1,4 +1,4 @@
-# React Compiler
+# React DOM Compiler
 
 Compile react-dom code to vanilla JS commands
 
