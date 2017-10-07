@@ -20,3 +20,8 @@ ReactDOM.render(<App />, document.querySelector('#root'))
 | measurement / Syntax resolver | React + React DOM   | React Compiler |
 | ---                           | ---                 | ---            |
 | Bundle size                   | 6kb + 108kb + 135b  | 1kb            |
+
+
+### Prior Art
+ - [Svelte](https://svelte.technology/)
+ - [Preact](https://github.com/developit/preact)
