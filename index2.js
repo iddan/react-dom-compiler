@@ -244,55 +244,6 @@ module.exports = function plugin({types: t}) {
             childPath.replaceWithMultiple(handleJSXElement(childPath.node));
           },
         });
-
-        // switch (path.node.body.type) {
-        //   case 'JSXElement': {
-        //     const {parentBlock} = path.scope;
-        //     if (matches({type: 'VariableDeclarator', init: {type: 'ArrowFunctionExpression'}}, parentBlock)) {
-        //       const {body} = parentBlock.init;
-        //       if (matches({type: 'JSXElement'}, body)) {
-        //         const statements = handleJSXElement(body);
-        //         const [declaration] = statements;
-        //         const [declarator] = declaration.declarations;
-        //         path.node.body = t.blockStatement([
-        //           ...statements,
-        //           t.returnStatement(declarator.id),
-        //         ]);
-        //       }
-        //     }
-        //     break;
-        //   }
-        //   case 'BlockStatement': {
-        //     path.traverse({
-        //       JSXElement: childPath => {
-        //         childPath.replaceWithMultiple();
-        //       },
-        //     });
-        //     break;
-        // path.node.body.body = path.node.body.body.reduce((acc, node) => {
-        //   switch (node.type) {
-        //     case 'ReturnStatement': {
-        //       console.log(node)
-        //       const statements = handleJSXElement(node.argument);
-        //       const [declaration] = statements;
-        //       const [declarator] = declaration.declarations;
-        //       return [
-        //         ...acc,
-        //         ...statements,
-        //         {
-        //           ...node,
-        //           argument: declarator.id,
-        //         },
-        //       ];
-        //     }
-        //     default: {
-        //       return [...acc, node];
-        //     }
-        //   }
-        // }, []);
-        // break;
-        // }
-        // }
       },
     },
   };
