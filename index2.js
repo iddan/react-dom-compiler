@@ -72,6 +72,11 @@ module.exports = function plugin({ types: t }) {
     attributes.map(({ name, value }) => t.objectProperty(t.identifier(name.name), value))
   )
 
+  const jsxElementToCallExpression = (jsxElement) => t.callExpression(
+    t.identifier(JSXElement.getName(jsxElement)),
+    [jsxAttributesToObjectExpression(jsxElement.openingElement.attributes)]
+  )
+
   return {
     visitor: {
 
@@ -92,10 +97,7 @@ module.exports = function plugin({ types: t }) {
             ),
             appendChild(
               rootNode,
-              t.callExpression(
-                t.identifier(JSXElement.getName(jsxElement)),
-                [jsxAttributesToObjectExpression(jsxElement.openingElement.attributes)]
-              )
+              jsxElementToCallExpression(jsxElement)
             )
           ])
         }
@@ -136,33 +138,40 @@ module.exports = function plugin({ types: t }) {
                         ]
                       }
                       case 'JSXExpressionContainer': {
-                        switch (child.expression.type) {
-                          case 'Identifier': {
-                            const identifier = child.expression
-                            const identifierId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
-                            return [
-                              ...acc,
-                              t.ifStatement(
-                                identifier,
-                                t.blockStatement([
-                                  declareConstant(
-                                    identifierId,
-                                    documentMethod(
-                                      'createTextNode',
-                                      [
-                                        identifier
-                                      ]
-                                    )
-                                  ),
-                                  t.expressionStatement(appendChild(
-                                    elementId,
-                                    identifierId
-                                  )),
-                                ])
-                              )
+                        const expressionId = path.scope.generateUidIdentifierBasedOnNode(path.node.id)
+                        return [
+                          ...acc,
+                          declareConstant(
+                            expressionId,
+                            child.expression
+                          ),
+                          t.switchStatement(
+                            t.unaryExpression('typeof', expressionId),
+                            [
+                              t.switchCase(t.stringLiteral('number'), []),
+                              t.switchCase(t.stringLiteral('string'), [t.blockStatement([
+                                t.expressionStatement(appendChild(
+                                  elementId,
+                                  documentMethod(
+                                    'createTextNode',
+                                    [
+                                      expressionId
+                                    ]
+                                  )
+                                )),
+                                t.breakStatement()
+                              ])]),
+                              t.switchCase(t.stringLiteral('object'), [t.blockStatement([
+                                t.ifStatement(expressionId, t.blockStatement([
+                                  t.throwStatement(t.newExpression(t.identifier('Error'), [
+                                    t.stringLiteral('Objects can not be passed as children')
+                                  ]))
+                                ])),
+                                t.breakStatement()
+                              ])])
                             ]
-                          }
-                        }
+                          ),
+                        ]
                         // break;
                       }
                       default: {

@@ -32,6 +32,7 @@ const A = ({ name }) => (
 )
 ReactDOM.render(<A name="Iddan" />, document.querySelector('#root'))
   `)
+  console.log(transformed)
   eval(transformed)
   expect(document.body.innerHTML).toBe('<div id="root"><div>hello <span>Iddan</span></div></div>')
 })
