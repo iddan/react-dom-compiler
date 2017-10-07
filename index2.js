@@ -68,28 +68,36 @@ module.exports = function plugin({ types: t }) {
     ]
   )
 
+  const jsxAttributesToObjectExpression = (attributes) => t.objectExpression(
+    attributes.map(({ name, value }) => t.objectProperty(t.identifier(name.name), value))
+  )
+
   return {
     visitor: {
 
       CallExpression: (path) => {
         if (isReactDOMRender(path.node)) {
           const [jsxElement, rootNode] = path.node.arguments
-          path.replaceWith(
+          const child = t.identifier('child')
+          path.replaceWithMultiple([
+            t.forOfStatement(
+              t.variableDeclaration('const', [t.variableDeclarator(child)]),
+              t.memberExpression(
+                rootNode,
+                t.identifier('childNodes')
+              ),
+              t.blockStatement([
+                t.expressionStatement(methodCallExpression(child, 'remove', []))
+              ])
+            ),
             appendChild(
               rootNode,
               t.callExpression(
-                t.memberExpression(
-                  t.newExpression(
-                    // yes i know this is stupid, im lazy
-                    t.identifier(JSXElement.getName(jsxElement)),
-                    [],
-                  ),
-                  t.identifier('render')
-                ),
-                []
+                t.identifier(JSXElement.getName(jsxElement)),
+                [jsxAttributesToObjectExpression(jsxElement.openingElement.attributes)]
               )
             )
-          )
+          ])
         }
       },
 
@@ -165,21 +173,8 @@ module.exports = function plugin({ types: t }) {
             if (matches({ type: 'VariableDeclarator', init: { type: 'ArrowFunctionExpression' } }, parentBlock)) {
               const { body } = parentBlock.init
               if (matches({ type: 'JSXElement' }, body)) {
-                path.parentPath.parentPath.replaceWith(
-                  t.classDeclaration(
-                    parentBlock.id,
-                    null,
-                    t.classBody([
-                      t.classMethod(
-                        'method',
-                        t.identifier('render'),
-                        [],
-                        t.blockStatement(handleJSXElement(body))
-                      )
-                    ]),
-                    []
-                  )
-                )
+                const props = t.identifier('props')
+                path.node.body = t.blockStatement(handleJSXElement(body))
               }
             }
           }

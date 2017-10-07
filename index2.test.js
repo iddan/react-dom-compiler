@@ -10,29 +10,16 @@ const transform = (code) => Babel.transform(code, {
 }).code
 
 test('Arrow function of static JSXElement and JSXTest', () => {
-  expect(transform(`
-  const A = ({ name }) => (
-    <div>hello{ name }</div>
-  )
-  ReactDOM.render(<A />, document.querySelector('#root'))
-  `)).toBe(`class A {
-  render() {
-    const _ref = document.createElement('div');
-
-    const _ref2 = document.createTextNode('hello');
-
-    _ref.appendChild(_ref2);
-
-    if (name) {
-      const _ref3 = document.createTextNode(name);
-
-      _ref.appendChild(_ref3);
-    }
-
-    return _ref;
-  }
-
-}
-
-document.querySelector('#root').appendChild(new A().render());`)
+  const rootNode = document.createElement('div')
+  rootNode.id = 'root'
+  document.body.appendChild(rootNode)
+  rootNode.appendChild(document.createTextNode('text before'))
+  const transformed = transform(`
+const A = ({ name }) => (
+  <div>hello { name }</div>
+)
+ReactDOM.render(<A name="Iddan" />, document.querySelector('#root'))
+  `)
+  eval(transformed)
+  expect(document.body.innerHTML).toBe('<div id="root"><div>hello Iddan</div></div>')
 })
