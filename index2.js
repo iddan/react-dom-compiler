@@ -1,13 +1,8 @@
-const Babel = require('babel-core')
+/**
+ * Compile React component into vanilla DOM JS code
+ */
+
 const matches = require('lodash/fp/matches')
-
-const exampleInputCode = `
-const A = ({ name }) => (
-  <div>hello{ name }</div>
-)
-
-ReactDOM.render(<A />, document.querySelector('#root'))
-`
 
 const isReactDOMRender = matches({
   callee: {
@@ -25,20 +20,20 @@ const JSXElement = {
   isDOMElement: (jsxElement) => Boolean(JSXElement.getName(jsxElement).match(/[a-z]/))
 }
 
-function plugin({ types: t }) {
+module.exports = function plugin({ types: t }) {
 
-  const methodCallExpression = (object, method, arguments) => t.callExpression(
+  const methodCallExpression = (object, method, args) => t.callExpression(
     t.memberExpression(
       object,
       t.identifier(method)
     ),
-    arguments
+    args
   )
 
-  const documentMethod = (method, arguments) => methodCallExpression(
+  const documentMethod = (method, args) => methodCallExpression(
     t.identifier('document'),
     method,
-    arguments
+    args
   )
 
   const createElement = (type) => documentMethod(
@@ -193,13 +188,3 @@ function plugin({ types: t }) {
     }
   }
 }
-
-const { code } = Babel.transform(exampleInputCode, {
-  plugins: [
-    'babel-plugin-syntax-class-properties',
-    'babel-plugin-syntax-jsx',
-    plugin,
-  ]
-})
-
-console.log(code)

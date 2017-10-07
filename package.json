@@ -10,5 +10,8 @@
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
     "webcomponentsjs": "^1.0.2"
+  },
+  "devDependencies": {
+    "jest": "^21.2.1"
   }
 }
