@@ -1,4 +1,5 @@
 {
+  "eslint.enable": true,
   "files.exclude": {
     "node_modules/": "explorerExcludedFiles",
     "*.bundle*": "explorerExcludedFiles"
