@@ -12,7 +12,7 @@
     "babel-plugin-transform-react-jsx": "^6.24.1",
     "jsdom": "^11.2.0",
     "react": "^15.6.1",
-    "react-dom": "^15.6.1",
+    "react-dom": "^16.0.1",
     "webcomponentsjs": "^1.0.2"
   },
   "devDependencies": {
